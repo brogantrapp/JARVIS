@@ -18,14 +18,14 @@ const statusText = document.getElementById("statusText");
 const state = document.getElementById("jarvisState");
 const log = document.getElementById("log");
 
-// safety check (prevents silent failure)
+// safety check
 if(!chat || !input){
-console.error("Missing HTML elements. Check IDs in index.html");
+console.error("Missing elements - check HTML IDs");
 return;
 }
 
 // =============================
-// CLOCK (FIXED)
+// CLOCK
 // =============================
 
 function updateClock(){
@@ -38,7 +38,7 @@ updateClock();
 setInterval(updateClock, 1000);
 
 // =============================
-// SYSTEM BARS
+// SYSTEM STATS (fake for now)
 // =============================
 
 function rand(){
@@ -46,16 +46,16 @@ return Math.floor(Math.random()*70)+20;
 }
 
 function updateBars(){
-cpuBar.style.width = rand() + "%";
-ramBar.style.width = rand() + "%";
-netBar.style.width = rand() + "%";
+cpuBar.style.width = rand()+"%";
+ramBar.style.width = rand()+"%";
+netBar.style.width = rand()+"%";
 }
 
 updateBars();
 setInterval(updateBars, 2500);
 
 // =============================
-// CHAT
+// CHAT SYSTEM
 // =============================
 
 function addMessage(text,type){
@@ -72,7 +72,7 @@ chat.scrollTop = chat.scrollHeight;
 
 function typeJarvis(text){
 
-state.innerText = "PROCESSING...";
+state.innerText = "THINKING...";
 
 const bubble = document.createElement("div");
 bubble.className = "message jarvis";
@@ -80,37 +80,136 @@ chat.appendChild(bubble);
 
 let i = 0;
 
-const timer = setInterval(() => {
+const interval = setInterval(() => {
+
 bubble.innerHTML += text.charAt(i);
 i++;
 
+chat.scrollTop = chat.scrollHeight;
+
 if(i >= text.length){
-clearInterval(timer);
+clearInterval(interval);
 state.innerText = "AWAITING COMMAND";
 }
-
-chat.scrollTop = chat.scrollHeight;
 
 }, 18);
 }
 
 // =============================
-// COMMAND ENGINE
+// COMMAND SYSTEM v2 (SKILLS ENGINE)
+// =============================
+
+const skills = [
+
+{
+name: "greeting",
+keywords: ["hello","hi","hey"],
+run: () => random([
+"Hello, Brogan.",
+"Good to see you.",
+"Systems online.",
+"JARVIS ready."
+])
+},
+
+{
+name: "time",
+keywords: ["time","clock"],
+run: () => "Current time is " + new Date().toLocaleTimeString()
+},
+
+{
+name: "date",
+keywords: ["date","today"],
+run: () => "Today is " + new Date().toDateString()
+},
+
+{
+name: "status",
+keywords: ["status","systems"],
+run: () => "All systems are fully operational."
+},
+
+{
+name: "identity",
+keywords: ["who are you","your name"],
+run: () => "I am J.A.R.V.I.S., your assistant system."
+},
+
+{
+name: "creator",
+keywords: ["who made you","creator"],
+run: () => "I was built by Brogan, with development assistance."
+},
+
+{
+name: "intel",
+keywords: ["map","intel"],
+run: () => "Intel Map integration detected. Connection not yet active."
+},
+
+{
+name: "code",
+keywords: ["code","python","javascript"],
+run: () => "Coding assistance is available once AI brain is connected."
+}
+
+];
+
+// =============================
+// FALLBACK RESPONSES
+// =============================
+
+const fallback = [
+"I'm not sure about that yet.",
+"That feature isn't installed.",
+"I can learn that later.",
+"No matching system found.",
+"Module not available."
+];
+
+// =============================
+// COMMAND PROCESSOR
 // =============================
 
 function processCommand(text){
 
 const t = text.toLowerCase();
 
-statusText.innerText = "Analyzing...";
+statusText.innerText = "ANALYZING...";
 
 setTimeout(() => {
 
-typeJarvis(getResponse(t));
-statusText.innerText = "Standing by.";
+const response = findSkill(t);
+
+typeJarvis(response);
+
+statusText.innerText = "STANDBY";
+
 updateLog(text);
 
-}, 300);
+}, 400);
+}
+
+// =============================
+// SKILL FINDER
+// =============================
+
+function findSkill(text){
+
+for(const skill of skills){
+
+for(const key of skill.keywords){
+
+if(text.includes(key)){
+return skill.run();
+}
+
+}
+
+}
+
+return random(fallback);
 }
 
 // =============================
@@ -125,36 +224,7 @@ log.innerHTML =
 }
 
 // =============================
-// RESPONSE ENGINE
-// =============================
-
-function getResponse(t){
-
-if(t.includes("hello") || t.includes("hi") || t.includes("hey")){
-return "Hello, Brogan.";
-}
-
-if(t.includes("time")){
-return "Current time is " + new Date().toLocaleTimeString();
-}
-
-if(t.includes("date")){
-return "Today is " + new Date().toDateString();
-}
-
-if(t.includes("who are you")){
-return "I am J.A.R.V.I.S., your assistant.";
-}
-
-if(t.includes("status")){
-return "All systems operational.";
-}
-
-return "I’m online. I just don’t have that capability yet.";
-}
-
-// =============================
-// SEND MESSAGE (FIXED)
+// INPUT
 // =============================
 
 window.sendMessage = function(){
@@ -163,16 +233,25 @@ const text = input.value.trim();
 if(!text) return;
 
 addMessage(text,"user");
+
 input.value = "";
 
 processCommand(text);
+
 };
 
-// Enter key support
-input.addEventListener("keydown", (e) => {
+input.addEventListener("keydown",(e)=>{
 if(e.key === "Enter"){
 sendMessage();
 }
 });
+
+// =============================
+// HELPERS
+// =============================
+
+function random(arr){
+return arr[Math.floor(Math.random()*arr.length)];
+}
 
 });
