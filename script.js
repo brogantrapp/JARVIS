@@ -24,6 +24,12 @@ return;
 }
 
 // =============================
+// CONFIG (PUT YOUR KEY HERE)
+// =============================
+
+const GROQ_API_KEY = "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";
+
+// =============================
 // CLOCK
 // =============================
 
@@ -91,59 +97,60 @@ clearInterval(interval);
 state.innerText = "AWAITING COMMAND";
 }
 
-}, 18);
+}, 16);
 }
 
 // =============================
-// AI (CHROMEBOOK FRIENDLY)
+// AI (GROQ - FAST + RELIABLE)
 // =============================
 
 async function askAI(message){
 
+if(GROQ_API_KEY === "PASTE_YOUR_KEY_HERE"){
+return "AI key missing. Add your Groq API key first.";
+}
+
 try{
 
-const res = await fetch(
-"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
-{
+const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
 method: "POST",
 headers: {
-"Content-Type": "application/json"
+"Content-Type": "application/json",
+"Authorization": `Bearer ${GROQ_API_KEY}`
 },
 body: JSON.stringify({
-inputs: message
-})
+model: "llama-3.1-8b-instant",
+messages: [
+{
+role: "system",
+content: "You are JARVIS, a highly intelligent assistant. Be concise, helpful, and slightly futuristic in tone."
+},
+{
+role: "user",
+content: message
 }
-);
+],
+temperature: 0.7
+})
+});
 
 const data = await res.json();
 
-// different possible formats
-if(Array.isArray(data) && data[0]?.generated_text){
-return data[0].generated_text;
-}
-
-if(data.generated_text){
-return data.generated_text;
-}
-
-if(typeof data === "string"){
-return data;
-}
-
-return "AI responded but format was unexpected.";
+return data.choices?.[0]?.message?.content
+|| "No AI response received.";
 
 }catch(err){
 
-console.error("AI error:", err);
+console.error(err);
 
-return "AI module offline or unreachable.";
+return "AI system unreachable.";
 
 }
 
 }
 
 // =============================
-// SKILLS SYSTEM (v2)
+// SKILLS (COMMAND SYSTEM V2)
 // =============================
 
 const skills = [
@@ -154,8 +161,8 @@ keywords: ["hello","hi","hey"],
 run: () => random([
 "Hello, Brogan.",
 "Good to see you.",
-"Systems online.",
-"JARVIS ready."
+"JARVIS online.",
+"Systems ready."
 ])
 },
 
@@ -180,7 +187,7 @@ run: () => "All systems operational."
 {
 name: "identity",
 keywords: ["who are you","your name"],
-run: () => "I am J.A.R.V.I.S., your assistant system."
+run: () => "I am J.A.R.V.I.S., your AI assistant interface."
 },
 
 {
@@ -198,7 +205,7 @@ run: () => "Intel Map detected. Integration pending."
 {
 name: "code",
 keywords: ["code","python","javascript"],
-run: () => "Coding help enabled via AI when needed."
+run: () => "Coding help will use AI brain when available."
 }
 
 ];
@@ -208,33 +215,32 @@ run: () => "Coding help enabled via AI when needed."
 // =============================
 
 const fallback = [
-"I'm not sure yet.",
-"That module is not active.",
-"I can learn that later.",
-"No direct skill found.",
-"Processing request..."
+"I'm not sure about that yet.",
+"That capability isn't active.",
+"I can learn this later.",
+"No skill matched.",
+"Processing via AI..."
 ];
 
 // =============================
-// SMART ROUTER
+// ROUTER
 // =============================
 
 async function smartResponse(text){
 
-const skillResult = findSkill(text);
+const skill = findSkill(text);
 
-// if skill matched, use it
-if(skillResult && !fallback.includes(skillResult)){
-return skillResult;
+if(skill){
+return skill;
 }
 
-// otherwise AI
+// fallback to AI
 return await askAI(text);
 
 }
 
 // =============================
-// SKILL FINDER
+// FIND SKILL
 // =============================
 
 function findSkill(text){
@@ -251,18 +257,16 @@ return null;
 }
 
 // =============================
-// COMMAND PROCESSOR
+// PROCESS COMMAND
 // =============================
 
 async function processCommand(text){
-
-const t = text.toLowerCase();
 
 statusText.innerText = "ANALYZING...";
 
 setTimeout(async () => {
 
-const response = await smartResponse(t);
+const response = await smartResponse(text);
 
 typeJarvis(response);
 
