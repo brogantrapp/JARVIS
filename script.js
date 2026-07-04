@@ -7,16 +7,11 @@ window.addEventListener("DOMContentLoaded", () => {
 const chat = document.getElementById("chat");
 const input = document.getElementById("prompt");
 
-const clock = document.getElementById("clock");
-const date = document.getElementById("date");
-
-const cpuBar = document.getElementById("cpuBar");
-const ramBar = document.getElementById("ramBar");
-const netBar = document.getElementById("netBar");
-
 const statusText = document.getElementById("statusText");
 const state = document.getElementById("jarvisState");
 const log = document.getElementById("log");
+
+const utcPanel = document.getElementById("utcTime");
 
 if(!chat || !input){
 console.error("Missing HTML elements");
@@ -27,48 +22,34 @@ return;
 // CONFIG
 // =============================
 
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "PASTE_YOUR_KEY_HERE";
 
 // =============================
-// CLOCK (SAFE)
+// UTC CLOCK CORE
 // =============================
 
-function updateClock(){
+function updateUTC(){
+
 try{
+
+if(!utcPanel) return;
+
 const now = new Date();
-if(clock) clock.innerText = now.toLocaleTimeString();
-if(date) date.innerText = now.toDateString();
-}catch(e){
-console.error(e);
-}
+const utc = now.toISOString().split("T")[1].split(".")[0];
+
+utcPanel.innerText = utc;
+
+}catch(err){
+console.error("UTC error:", err);
 }
 
-updateClock();
-setInterval(updateClock, 1000);
+}
+
+updateUTC();
+setInterval(updateUTC, 1000);
 
 // =============================
-// SYSTEM BARS
-// =============================
-
-function rand(){
-return Math.floor(Math.random()*70)+20;
-}
-
-function updateBars(){
-try{
-cpuBar.style.width = rand()+"%";
-ramBar.style.width = rand()+"%";
-netBar.style.width = rand()+"%";
-}catch(e){
-console.error(e);
-}
-}
-
-updateBars();
-setInterval(updateBars, 2500);
-
-// =============================
-// CHAT
+// CHAT SYSTEM
 // =============================
 
 function addMessage(text,type){
@@ -80,7 +61,7 @@ chat.scrollTop = chat.scrollHeight;
 }
 
 // =============================
-// VOICE (FIXED JARVIS STYLE)
+// VOICE OUTPUT
 // =============================
 
 function speak(text){
@@ -119,7 +100,7 @@ console.error("Voice error:", err);
 }
 
 // =============================
-// TYPING EFFECT
+// TYPE EFFECT
 // =============================
 
 function typeJarvis(text){
@@ -177,7 +158,7 @@ model: "llama-3.1-8b-instant",
 messages: [
 {
 role: "system",
-content: "You are JARVIS. Address the user as Brogan. Never say Master. Keep responses short (1–3 sentences)."
+content: "You are JARVIS. Address the user as Brogan. Keep responses short (1–3 sentences). Never say Master."
 },
 {
 role: "user",
@@ -189,8 +170,7 @@ content: message
 
 const data = await res.json();
 
-return data.choices?.[0]?.message?.content
-|| "No response.";
+return data.choices?.[0]?.message?.content || "No response.";
 
 }catch(err){
 console.error(err);
@@ -231,12 +211,6 @@ run:()=> "Today is " + new Date().toDateString()
 name:"status",
 keywords:["status"],
 run:()=> "All systems operational."
-},
-
-{
-name:"identity",
-keywords:["who are you"],
-run:()=> "I am J.A.R.V.I.S., your assistant."
 }
 
 ];
@@ -281,7 +255,7 @@ return await askAI(text);
 }
 
 // =============================
-// PROCESS COMMAND (SAFE)
+// PROCESS COMMAND
 // =============================
 
 async function processCommand(text){
@@ -296,11 +270,11 @@ typeJarvis(response);
 
 statusText.innerText = "STANDBY";
 
-logMessage(text);
+updateLog(text);
 
-}catch(e){
+}catch(err){
 
-console.error(e);
+console.error(err);
 
 typeJarvis("System error.");
 
@@ -314,9 +288,13 @@ statusText.innerText = "ERROR";
 // LOG
 // =============================
 
-function logMessage(cmd){
+function updateLog(cmd){
+
 const time = new Date().toLocaleTimeString();
-log.innerHTML = `• ${time}<br>${cmd}<br><br>` + log.innerHTML;
+
+log.innerHTML =
+`• ${time}<br>${cmd}<br><br>` + log.innerHTML;
+
 }
 
 // =============================
