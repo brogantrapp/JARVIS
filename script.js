@@ -18,9 +18,8 @@ const statusText = document.getElementById("statusText");
 const state = document.getElementById("jarvisState");
 const log = document.getElementById("log");
 
-// safety check
 if(!chat || !input){
-console.error("Missing elements - check HTML IDs");
+console.error("Missing HTML elements");
 return;
 }
 
@@ -38,7 +37,7 @@ updateClock();
 setInterval(updateClock, 1000);
 
 // =============================
-// SYSTEM STATS (fake for now)
+// SYSTEM BARS
 // =============================
 
 function rand(){
@@ -55,7 +54,7 @@ updateBars();
 setInterval(updateBars, 2500);
 
 // =============================
-// CHAT SYSTEM
+// CHAT
 // =============================
 
 function addMessage(text,type){
@@ -96,7 +95,55 @@ state.innerText = "AWAITING COMMAND";
 }
 
 // =============================
-// COMMAND SYSTEM v2 (SKILLS ENGINE)
+// AI (CHROMEBOOK FRIENDLY)
+// =============================
+
+async function askAI(message){
+
+try{
+
+const res = await fetch(
+"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct",
+{
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+inputs: message
+})
+}
+);
+
+const data = await res.json();
+
+// different possible formats
+if(Array.isArray(data) && data[0]?.generated_text){
+return data[0].generated_text;
+}
+
+if(data.generated_text){
+return data.generated_text;
+}
+
+if(typeof data === "string"){
+return data;
+}
+
+return "AI responded but format was unexpected.";
+
+}catch(err){
+
+console.error("AI error:", err);
+
+return "AI module offline or unreachable.";
+
+}
+
+}
+
+// =============================
+// SKILLS SYSTEM (v2)
 // =============================
 
 const skills = [
@@ -127,7 +174,7 @@ run: () => "Today is " + new Date().toDateString()
 {
 name: "status",
 keywords: ["status","systems"],
-run: () => "All systems are fully operational."
+run: () => "All systems operational."
 },
 
 {
@@ -139,56 +186,51 @@ run: () => "I am J.A.R.V.I.S., your assistant system."
 {
 name: "creator",
 keywords: ["who made you","creator"],
-run: () => "I was built by Brogan, with development assistance."
+run: () => "Built by Brogan with AI assistance."
 },
 
 {
 name: "intel",
 keywords: ["map","intel"],
-run: () => "Intel Map integration detected. Connection not yet active."
+run: () => "Intel Map detected. Integration pending."
 },
 
 {
 name: "code",
 keywords: ["code","python","javascript"],
-run: () => "Coding assistance is available once AI brain is connected."
+run: () => "Coding help enabled via AI when needed."
 }
 
 ];
 
 // =============================
-// FALLBACK RESPONSES
+// FALLBACK
 // =============================
 
 const fallback = [
-"I'm not sure about that yet.",
-"That feature isn't installed.",
+"I'm not sure yet.",
+"That module is not active.",
 "I can learn that later.",
-"No matching system found.",
-"Module not available."
+"No direct skill found.",
+"Processing request..."
 ];
 
 // =============================
-// COMMAND PROCESSOR
+// SMART ROUTER
 // =============================
 
-function processCommand(text){
+async function smartResponse(text){
 
-const t = text.toLowerCase();
+const skillResult = findSkill(text);
 
-statusText.innerText = "ANALYZING...";
+// if skill matched, use it
+if(skillResult && !fallback.includes(skillResult)){
+return skillResult;
+}
 
-setTimeout(() => {
+// otherwise AI
+return await askAI(text);
 
-const response = findSkill(t);
-
-typeJarvis(response);
-
-statusText.innerText = "STANDBY";
-
-updateLog(text);
-
-}, 400);
 }
 
 // =============================
@@ -198,18 +240,37 @@ updateLog(text);
 function findSkill(text){
 
 for(const skill of skills){
-
 for(const key of skill.keywords){
-
 if(text.includes(key)){
 return skill.run();
 }
-
+}
 }
 
+return null;
 }
 
-return random(fallback);
+// =============================
+// COMMAND PROCESSOR
+// =============================
+
+async function processCommand(text){
+
+const t = text.toLowerCase();
+
+statusText.innerText = "ANALYZING...";
+
+setTimeout(async () => {
+
+const response = await smartResponse(t);
+
+typeJarvis(response);
+
+statusText.innerText = "STANDBY";
+
+updateLog(text);
+
+}, 300);
 }
 
 // =============================
@@ -233,7 +294,6 @@ const text = input.value.trim();
 if(!text) return;
 
 addMessage(text,"user");
-
 input.value = "";
 
 processCommand(text);
