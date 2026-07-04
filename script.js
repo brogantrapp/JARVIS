@@ -129,10 +129,38 @@ function speak(text){
 
 try{
 
+// stop overlapping speech
+speechSynthesis.cancel();
+
 const speech = new SpeechSynthesisUtterance(text);
-speech.rate = 1;
-speech.pitch = 0.9;
+
+// JARVIS-style tuning
+speech.rate = 0.92;     // slightly slower = more authoritative
+speech.pitch = 0.85;    // lower = more “AI / male assistant feel”
 speech.volume = 1;
+
+// try to find best available voice
+const voices = speechSynthesis.getVoices();
+
+let jarvisVoice = voices.find(v =>
+v.name.toLowerCase().includes("english") &&
+(v.name.toLowerCase().includes("uk") ||
+ v.name.toLowerCase().includes("brit") ||
+ v.lang === "en-GB")
+);
+
+// fallback chain if UK voice not found
+if(!jarvisVoice){
+jarvisVoice = voices.find(v =>
+v.name.toLowerCase().includes("david") ||
+v.name.toLowerCase().includes("mark") ||
+v.name.toLowerCase().includes("male")
+);
+}
+
+if(jarvisVoice){
+speech.voice = jarvisVoice;
+}
 
 speechSynthesis.speak(speech);
 
