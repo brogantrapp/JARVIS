@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>J.A.R.V.I.S.</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div id="grid"></div>
+
+<div id="glow"></div>
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+
+<div class="leftPanel">
+
+<h1>J.A.R.V.I.S.</h1>
+
+<div class="status online">
+
+<div class="led"></div>
+
+SYSTEM ONLINE
+
+</div>
+
+<div class="panel">
+
+<h2>TIME</h2>
+
+<div id="clock">00:00:00</div>
+
+<div id="date">Loading...</div>
+
+</div>
+
+<div class="panel">
+
+<h2>SYSTEM</h2>
+
+<div class="stat">
+
+<span>CPU</span>
+
+<div class="bar">
+
+<div id="cpuBar"></div>
+
+</div>
+
+</div>
+
+<div class="stat">
+
+<span>RAM</span>
+
+<div class="bar">
+
+<div id="ramBar"></div>
+
+</div>
+
+</div>
+
+<div class="stat">
+
+<span>NETWORK</span>
+
+<div class="bar">
+
+<div id="netBar"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<h2>STATUS</h2>
+
+<p id="statusText">
+
+All systems operational.
+
+</p>
+
+</div>
+
+</div>
+
+<!-- CENTER -->
+
+<div class="center">
+
+<div class="reactor">
+
+<div class="ring ring1"></div>
+
+<div class="ring ring2"></div>
+
+<div class="ring ring3"></div>
+
+<div class="core"></div>
+
+</div>
+
+<div id="jarvisState">
+
+AWAITING COMMAND
+
+</div>
+
+<div id="chat">
+
+<div class="message jarvis">
+
+Good evening, Brogan.
+
+System startup complete.
+
+Awaiting your command.
+
+</div>
+
+</div>
+
+<div class="inputArea">
+
+<input
+id="prompt"
+placeholder="Enter command..."
+autocomplete="off">
+
+<button onclick="sendMessage()">
+
+SEND
+
+</button>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+
+<div class="rightPanel">
+
+<div class="panel">
+
+<h2>MISSION LOG</h2>
+
+<div id="log">
+
+• System Booted<br>
+• Voice Module Offline<br>
+• AI Core Offline<br>
+• Waiting for instructions...
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<h2>MODULES</h2>
+
+<ul>
+
+<li>✔ Interface</li>
+
+<li>✔ Chat</li>
+
+<li>✔ Clock</li>
+
+<li>✔ HUD</li>
+
+<li>⬜ Voice</li>
+
+<li>⬜ AI Brain</li>
+
+<li>⬜ Memory</li>
+
+<li>⬜ Weather</li>
+
+<li>⬜ News</li>
+
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
