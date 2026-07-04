@@ -22,7 +22,7 @@ return;
 // CONFIG
 // =============================
 
-const GROQ_API_KEY = "PASTE_YOUR_KEY_HERE";
+const GROQ_API_KEY = "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";
 
 // =============================
 // UTC CLOCK CORE
