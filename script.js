@@ -123,7 +123,7 @@ model: "llama-3.1-8b-instant",
 messages: [
 {
 role: "system",
-content: "You are JARVIS, a highly intelligent assistant. Be concise, helpful, and slightly futuristic in tone."
+content: "content: "You are JARVIS, a helpful AI assistant. Address the user as Brogan. Try not to use the word 'Master'. Keep responses concise, clear, and slightly futuristic in tone."."
 },
 {
 role: "user",
