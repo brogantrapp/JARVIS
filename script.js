@@ -18,25 +18,35 @@ const statusText = document.getElementById("statusText");
 const state = document.getElementById("jarvisState");
 const log = document.getElementById("log");
 
+// safety check (prevents total crash)
 if(!chat || !input){
-console.error("Missing HTML elements");
+console.error("Missing HTML elements - check IDs");
 return;
 }
 
 // =============================
-// CONFIG (PUT YOUR KEY HERE)
+// CONFIG
 // =============================
 
 const GROQ_API_KEY = "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";
 
 // =============================
-// CLOCK
+// CLOCK (SAFE)
 // =============================
 
 function updateClock(){
+
+try{
+
 const now = new Date();
-clock.innerText = now.toLocaleTimeString();
-date.innerText = now.toDateString();
+
+if(clock) clock.innerText = now.toLocaleTimeString();
+if(date) date.innerText = now.toDateString();
+
+}catch(err){
+console.error("Clock error:", err);
+}
+
 }
 
 updateClock();
@@ -51,9 +61,13 @@ return Math.floor(Math.random()*70)+20;
 }
 
 function updateBars(){
+try{
 cpuBar.style.width = rand()+"%";
 ramBar.style.width = rand()+"%";
 netBar.style.width = rand()+"%";
+}catch(e){
+console.error("Bars error:", e);
+}
 }
 
 updateBars();
@@ -64,15 +78,18 @@ setInterval(updateBars, 2500);
 // =============================
 
 function addMessage(text,type){
+
 const div = document.createElement("div");
 div.className = "message " + type;
 div.innerHTML = text;
+
 chat.appendChild(div);
 chat.scrollTop = chat.scrollHeight;
+
 }
 
 // =============================
-// TYPING EFFECT
+// TYPE EFFECT + VOICE HOOK
 // =============================
 
 function typeJarvis(text){
@@ -95,25 +112,54 @@ chat.scrollTop = chat.scrollHeight;
 if(i >= text.length){
 clearInterval(interval);
 state.innerText = "AWAITING COMMAND";
+
+// optional voice (safe)
+speak(text);
 }
 
 }, 16);
+
 }
 
 // =============================
-// AI (GROQ - FAST + RELIABLE)
+// VOICE OUTPUT (SAFE)
+// =============================
+
+function speak(text){
+
+try{
+
+const speech = new SpeechSynthesisUtterance(text);
+speech.rate = 1;
+speech.pitch = 0.9;
+speech.volume = 1;
+
+speechSynthesis.speak(speech);
+
+}catch(err){
+console.error("Voice error:", err);
+}
+
+}
+
+// =============================
+// AI (GROQ - STABLE)
 // =============================
 
 async function askAI(message){
 
 if(GROQ_API_KEY === "PASTE_YOUR_KEY_HERE"){
-return "AI key missing. Add your Groq API key first.";
+return "AI key missing. Please add your Groq API key.";
 }
 
 try{
 
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 8000);
+
 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
 method: "POST",
+signal: controller.signal,
 headers: {
 "Content-Type": "application/json",
 "Authorization": `Bearer ${GROQ_API_KEY}`
@@ -123,16 +169,17 @@ model: "llama-3.1-8b-instant",
 messages: [
 {
 role: "system",
-content: "content: "You are JARVIS, a helpful AI assistant. Address the user as Brogan. Try not to use the word 'Master'. Keep responses concise, clear, and slightly futuristic in tone."."
+content: "You are JARVIS. Address the user as Brogan. Never say Master. Keep responses short (1-3 sentences). Be clear, direct, and slightly futuristic."
 },
 {
 role: "user",
 content: message
 }
-],
-temperature: 0.7
+]
 })
 });
+
+clearTimeout(timeout);
 
 const data = await res.json();
 
@@ -141,16 +188,16 @@ return data.choices?.[0]?.message?.content
 
 }catch(err){
 
-console.error(err);
+console.error("AI ERROR:", err);
 
-return "AI system unreachable.";
+return "AI system unavailable.";
 
 }
 
 }
 
 // =============================
-// SKILLS (COMMAND SYSTEM V2)
+// SKILLS SYSTEM (v2)
 // =============================
 
 const skills = [
@@ -160,9 +207,9 @@ name: "greeting",
 keywords: ["hello","hi","hey"],
 run: () => random([
 "Hello, Brogan.",
-"Good to see you.",
 "JARVIS online.",
-"Systems ready."
+"Systems ready.",
+"Good to see you, Brogan."
 ])
 },
 
@@ -193,7 +240,7 @@ run: () => "I am J.A.R.V.I.S., your AI assistant interface."
 {
 name: "creator",
 keywords: ["who made you","creator"],
-run: () => "Built by Brogan with AI assistance."
+run: () => "Built by Brogan with development assistance."
 },
 
 {
@@ -205,7 +252,7 @@ run: () => "Intel Map detected. Integration pending."
 {
 name: "code",
 keywords: ["code","python","javascript"],
-run: () => "Coding help will use AI brain when available."
+run: () => "AI brain will handle coding requests when needed."
 }
 
 ];
@@ -214,13 +261,9 @@ run: () => "Coding help will use AI brain when available."
 // FALLBACK
 // =============================
 
-const fallback = [
-"I'm not sure about that yet.",
-"That capability isn't active.",
-"I can learn this later.",
-"No skill matched.",
-"Processing via AI..."
-];
+function random(arr){
+return arr[Math.floor(Math.random()*arr.length)];
+}
 
 // =============================
 // ROUTER
@@ -228,19 +271,28 @@ const fallback = [
 
 async function smartResponse(text){
 
+try{
+
 const skill = findSkill(text);
 
 if(skill){
 return skill;
 }
 
-// fallback to AI
 return await askAI(text);
+
+}catch(err){
+
+console.error("Router error:", err);
+
+return "System error.";
+
+}
 
 }
 
 // =============================
-// FIND SKILL
+// SKILL FINDER
 // =============================
 
 function findSkill(text){
@@ -257,16 +309,21 @@ return null;
 }
 
 // =============================
-// PROCESS COMMAND
+// PROCESS COMMAND (SAFE)
 // =============================
 
 async function processCommand(text){
 
 statusText.innerText = "ANALYZING...";
 
-setTimeout(async () => {
+try{
 
 const response = await smartResponse(text);
+
+if(!response){
+typeJarvis("No response received.");
+return;
+}
 
 typeJarvis(response);
 
@@ -274,7 +331,16 @@ statusText.innerText = "STANDBY";
 
 updateLog(text);
 
-}, 300);
+}catch(err){
+
+console.error("Process error:", err);
+
+typeJarvis("System error occurred.");
+
+statusText.innerText = "ERROR";
+
+}
+
 }
 
 // =============================
@@ -282,10 +348,12 @@ updateLog(text);
 // =============================
 
 function updateLog(cmd){
+
 const time = new Date().toLocaleTimeString();
 
 log.innerHTML =
 `• ${time}<br>${cmd}<br><br>` + log.innerHTML;
+
 }
 
 // =============================
@@ -309,13 +377,5 @@ if(e.key === "Enter"){
 sendMessage();
 }
 });
-
-// =============================
-// HELPERS
-// =============================
-
-function random(arr){
-return arr[Math.floor(Math.random()*arr.length)];
-}
 
 });
