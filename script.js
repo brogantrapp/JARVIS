@@ -18,9 +18,8 @@ const statusText = document.getElementById("statusText");
 const state = document.getElementById("jarvisState");
 const log = document.getElementById("log");
 
-// safety check (prevents total crash)
 if(!chat || !input){
-console.error("Missing HTML elements - check IDs");
+console.error("Missing HTML elements");
 return;
 }
 
@@ -35,18 +34,13 @@ const GROQ_API_KEY = "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";
 // =============================
 
 function updateClock(){
-
 try{
-
 const now = new Date();
-
 if(clock) clock.innerText = now.toLocaleTimeString();
 if(date) date.innerText = now.toDateString();
-
-}catch(err){
-console.error("Clock error:", err);
+}catch(e){
+console.error(e);
 }
-
 }
 
 updateClock();
@@ -66,7 +60,7 @@ cpuBar.style.width = rand()+"%";
 ramBar.style.width = rand()+"%";
 netBar.style.width = rand()+"%";
 }catch(e){
-console.error("Bars error:", e);
+console.error(e);
 }
 }
 
@@ -78,18 +72,54 @@ setInterval(updateBars, 2500);
 // =============================
 
 function addMessage(text,type){
-
 const div = document.createElement("div");
 div.className = "message " + type;
 div.innerHTML = text;
-
 chat.appendChild(div);
 chat.scrollTop = chat.scrollHeight;
+}
+
+// =============================
+// VOICE (FIXED JARVIS STYLE)
+// =============================
+
+function speak(text){
+
+try{
+
+speechSynthesis.cancel();
+
+const speech = new SpeechSynthesisUtterance(text);
+
+speech.rate = 0.9;
+speech.pitch = 0.75;
+speech.volume = 1;
+
+let voices = speechSynthesis.getVoices();
+
+if(!voices || voices.length === 0){
+speechSynthesis.onvoiceschanged = () => speak(text);
+return;
+}
+
+const jarvisVoice =
+voices.find(v => v.lang === "en-GB") ||
+voices.find(v => v.name.toLowerCase().includes("david")) ||
+voices.find(v => v.name.toLowerCase().includes("male")) ||
+voices[0];
+
+speech.voice = jarvisVoice;
+
+speechSynthesis.speak(speech);
+
+}catch(err){
+console.error("Voice error:", err);
+}
 
 }
 
 // =============================
-// TYPE EFFECT + VOICE HOOK
+// TYPING EFFECT
 // =============================
 
 function typeJarvis(text){
@@ -113,7 +143,6 @@ if(i >= text.length){
 clearInterval(interval);
 state.innerText = "AWAITING COMMAND";
 
-// optional voice (safe)
 speak(text);
 }
 
@@ -122,68 +151,19 @@ speak(text);
 }
 
 // =============================
-// VOICE OUTPUT (SAFE)
-// =============================
-
-function speak(text){
-
-try{
-
-// stop overlapping speech
-speechSynthesis.cancel();
-
-const speech = new SpeechSynthesisUtterance(text);
-
-// JARVIS-style tuning
-speech.rate = 0.92;     // slightly slower = more authoritative
-speech.pitch = 0.85;    // lower = more “AI / male assistant feel”
-speech.volume = 1;
-
-// try to find best available voice
-const voices = speechSynthesis.getVoices();
-
-let jarvisVoice = voices.find(v =>
-v.name.toLowerCase().includes("english") &&
-(v.name.toLowerCase().includes("uk") ||
- v.name.toLowerCase().includes("brit") ||
- v.lang === "en-GB")
-);
-
-// fallback chain if UK voice not found
-if(!jarvisVoice){
-jarvisVoice = voices.find(v =>
-v.name.toLowerCase().includes("david") ||
-v.name.toLowerCase().includes("mark") ||
-v.name.toLowerCase().includes("male")
-);
-}
-
-if(jarvisVoice){
-speech.voice = jarvisVoice;
-}
-
-speechSynthesis.speak(speech);
-
-}catch(err){
-console.error("Voice error:", err);
-}
-
-}
-
-// =============================
-// AI (GROQ - STABLE)
+// AI (GROQ)
 // =============================
 
 async function askAI(message){
 
 if(GROQ_API_KEY === "PASTE_YOUR_KEY_HERE"){
-return "AI key missing. Please add your Groq API key.";
+return "AI key missing.";
 }
 
 try{
 
 const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), 8000);
+setTimeout(() => controller.abort(), 8000);
 
 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
 method: "POST",
@@ -197,7 +177,7 @@ model: "llama-3.1-8b-instant",
 messages: [
 {
 role: "system",
-content: "You are JARVIS. Address the user as Brogan. Never say Master. Keep responses short (1-3 sentences). Be clear, direct, and slightly futuristic."
+content: "You are JARVIS. Address the user as Brogan. Never say Master. Keep responses short (1–3 sentences)."
 },
 {
 role: "user",
@@ -207,86 +187,62 @@ content: message
 })
 });
 
-clearTimeout(timeout);
-
 const data = await res.json();
 
 return data.choices?.[0]?.message?.content
-|| "No AI response received.";
+|| "No response.";
 
 }catch(err){
-
-console.error("AI ERROR:", err);
-
-return "AI system unavailable.";
-
+console.error(err);
+return "AI unavailable.";
 }
 
 }
 
 // =============================
-// SKILLS SYSTEM (v2)
+// SKILLS
 // =============================
 
 const skills = [
 
 {
-name: "greeting",
-keywords: ["hello","hi","hey"],
-run: () => random([
+name:"greeting",
+keywords:["hello","hi","hey"],
+run:()=>random([
 "Hello, Brogan.",
 "JARVIS online.",
-"Systems ready.",
-"Good to see you, Brogan."
+"Systems ready."
 ])
 },
 
 {
-name: "time",
-keywords: ["time","clock"],
-run: () => "Current time is " + new Date().toLocaleTimeString()
+name:"time",
+keywords:["time","clock"],
+run:()=> "Current time is " + new Date().toLocaleTimeString()
 },
 
 {
-name: "date",
-keywords: ["date","today"],
-run: () => "Today is " + new Date().toDateString()
+name:"date",
+keywords:["date","today"],
+run:()=> "Today is " + new Date().toDateString()
 },
 
 {
-name: "status",
-keywords: ["status","systems"],
-run: () => "All systems operational."
+name:"status",
+keywords:["status"],
+run:()=> "All systems operational."
 },
 
 {
-name: "identity",
-keywords: ["who are you","your name"],
-run: () => "I am J.A.R.V.I.S., your AI assistant interface."
-},
-
-{
-name: "creator",
-keywords: ["who made you","creator"],
-run: () => "Built by Brogan with development assistance."
-},
-
-{
-name: "intel",
-keywords: ["map","intel"],
-run: () => "Intel Map detected. Integration pending."
-},
-
-{
-name: "code",
-keywords: ["code","python","javascript"],
-run: () => "AI brain will handle coding requests when needed."
+name:"identity",
+keywords:["who are you"],
+run:()=> "I am J.A.R.V.I.S., your assistant."
 }
 
 ];
 
 // =============================
-// FALLBACK
+// HELPERS
 // =============================
 
 function random(arr){
@@ -294,12 +250,25 @@ return arr[Math.floor(Math.random()*arr.length)];
 }
 
 // =============================
-// ROUTER
+// FIND SKILL
+// =============================
+
+function findSkill(text){
+for(const s of skills){
+for(const k of s.keywords){
+if(text.includes(k)){
+return s.run();
+}
+}
+}
+return null;
+}
+
+// =============================
+// SMART ROUTER
 // =============================
 
 async function smartResponse(text){
-
-try{
 
 const skill = findSkill(text);
 
@@ -309,31 +278,6 @@ return skill;
 
 return await askAI(text);
 
-}catch(err){
-
-console.error("Router error:", err);
-
-return "System error.";
-
-}
-
-}
-
-// =============================
-// SKILL FINDER
-// =============================
-
-function findSkill(text){
-
-for(const skill of skills){
-for(const key of skill.keywords){
-if(text.includes(key)){
-return skill.run();
-}
-}
-}
-
-return null;
 }
 
 // =============================
@@ -348,22 +292,17 @@ try{
 
 const response = await smartResponse(text);
 
-if(!response){
-typeJarvis("No response received.");
-return;
-}
-
 typeJarvis(response);
 
 statusText.innerText = "STANDBY";
 
-updateLog(text);
+logMessage(text);
 
-}catch(err){
+}catch(e){
 
-console.error("Process error:", err);
+console.error(e);
 
-typeJarvis("System error occurred.");
+typeJarvis("System error.");
 
 statusText.innerText = "ERROR";
 
@@ -375,13 +314,9 @@ statusText.innerText = "ERROR";
 // LOG
 // =============================
 
-function updateLog(cmd){
-
+function logMessage(cmd){
 const time = new Date().toLocaleTimeString();
-
-log.innerHTML =
-`• ${time}<br>${cmd}<br><br>` + log.innerHTML;
-
+log.innerHTML = `• ${time}<br>${cmd}<br><br>` + log.innerHTML;
 }
 
 // =============================
